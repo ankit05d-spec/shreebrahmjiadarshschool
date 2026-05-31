@@ -1,0 +1,6 @@
+{
+  "name": "Shree Brahma Ji Adarsh HP School",
+  "description": "School Management Portal and Web Application for Shree Brahma Ji Adarsh HP School, Muhammada Barwapatti, Motichak, Kushinagar, Uttar Pradesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
