@@ -18,9 +18,20 @@ export default function DonationSection({ lang }: DonationSectionProps) {
   
   const [successMsg, setSuccessMsg] = useState('');
   const [donations, setDonations] = useState<DonationRecord[]>([]);
+  const [customQrCode, setCustomQrCode] = useState<string | null>(null);
+  const [customUpiId, setCustomUpiId] = useState<string>('9450231827@paytm');
 
   // Load registered donations list for donor roll (public view)
   const loadDonations = () => {
+    const qrImage = localStorage.getItem("sbj_school_donation_qr");
+    if (qrImage) {
+      setCustomQrCode(qrImage);
+    }
+    const savedUpi = localStorage.getItem("sbj_school_upi_id");
+    if (savedUpi) {
+      setCustomUpiId(savedUpi);
+    }
+
     const list = localStorage.getItem("sbj_school_donations");
     if (list) {
       try {
@@ -31,6 +42,17 @@ export default function DonationSection({ lang }: DonationSectionProps) {
     } else {
       // Pre-seeded local donor roll to inspire users
       const defaultDonations: DonationRecord[] = [
+        {
+          id: 'seed_don_3',
+          donorName: 'Rakesh Patel',
+          amount: 10000,
+          email: 'rakesh.patel@gmail.com',
+          phone: '9450******',
+          referenceNumber: 'UPI9028472910',
+          message: 'अत्यंत सराहनीय प्रयास! बच्चों के बेहतर स्पोर्ट्स व डिजिटल शिक्षा किट की खरीद हेतु छोटा सा सहयोग।',
+          date: '2026-05-30',
+          status: 'Verified'
+        },
         {
           id: 'seed_don_1',
           donorName: 'Dr. Ramesh Kumar Gupta (Ex-Student Parent)',
@@ -190,28 +212,34 @@ export default function DonationSection({ lang }: DonationSectionProps) {
             
             <div className="flex flex-col sm:flex-row items-center gap-4 bg-stone-50 p-4 rounded-xl border border-stone-150">
               
-              {/* Generated simulated beautiful vector QR code styled box */}
-              <div className="w-28 h-28 bg-white p-2 rounded-lg border border-stone-200 shadow-sm shrink-0 flex flex-col justify-between items-center relative">
-                <div className="grid grid-cols-4 gap-1 w-full h-full opacity-80">
-                  <div className="border-t-4 border-l-4 border-stone-900 w-5 h-5"></div>
-                  <div></div>
-                  <div></div>
-                  <div className="border-t-4 border-r-4 border-stone-900 w-5 h-5 ml-auto"></div>
-                  <div></div>
-                  <Heart className="w-5 h-5 text-red-500 animate-pulse mx-auto col-span-2" />
-                  <div></div>
-                  <div className="border-b-4 border-l-4 border-stone-900 w-5 h-5 mt-auto"></div>
-                  <div></div>
-                  <div></div>
-                  <div className="border-b-4 border-r-4 border-stone-900 w-5 h-5 mt-auto ml-auto"></div>
+              {customQrCode ? (
+                <div className="w-28 h-28 bg-white p-2 rounded-lg border border-stone-200 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
+                  <img src={customQrCode} alt="UPI QR Code" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
                 </div>
-                <span className="text-[7.5px] font-bold text-stone-800 font-mono tracking-widest mt-1">SBJSCHOOL@UPI</span>
-              </div>
+              ) : (
+                /* Generated simulated beautiful vector QR code styled box */
+                <div className="w-28 h-28 bg-white p-2 rounded-lg border border-stone-200 shadow-sm shrink-0 flex flex-col justify-between items-center relative">
+                  <div className="grid grid-cols-4 gap-1 w-full h-full opacity-80">
+                    <div className="border-t-4 border-l-4 border-stone-900 w-5 h-5"></div>
+                    <div></div>
+                    <div></div>
+                    <div className="border-t-4 border-r-4 border-stone-900 w-5 h-5 ml-auto"></div>
+                    <div></div>
+                    <Heart className="w-5 h-5 text-red-500 animate-pulse mx-auto col-span-2" />
+                    <div></div>
+                    <div className="border-b-4 border-l-4 border-stone-900 w-5 h-5 mt-auto"></div>
+                    <div></div>
+                    <div></div>
+                    <div className="border-b-4 border-r-4 border-stone-900 w-5 h-5 mt-auto ml-auto"></div>
+                  </div>
+                  <span className="text-[7.5px] font-bold text-stone-800 font-mono tracking-widest mt-1">SBJSCHOOL@UPI</span>
+                </div>
+              )}
 
               <div className="space-y-1.5 text-xs text-stone-700 leading-relaxed font-semibold">
                 <p className="text-stone-800">
                   {lang === 'en' ? "Official UPI Address:" : "आधिकारिक यूपीआई पता (UPI-ID):"} 
-                  <span className="block font-mono text-red-900 font-bold select-all">9450231827@paytm</span>
+                  <span className="block font-mono text-red-900 font-bold select-all">{customUpiId}</span>
                 </p>
                 <p className="text-[11px] text-stone-500">
                   {lang === 'en'

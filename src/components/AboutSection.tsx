@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TRANSLATIONS, FACULTY_MEMBERS, SCHOOL_INFO } from '../data';
 import { Language } from '../types';
 import { History, Target, Users, Award, ShieldAlert, PhoneCall, Feather } from 'lucide-react';
@@ -10,6 +10,28 @@ interface AboutSectionProps {
 
 export default function AboutSection({ lang }: AboutSectionProps) {
   const t = TRANSLATIONS[lang];
+  const [customFounderPhoto, setCustomFounderPhoto] = useState<string | null>(null);
+  const [teachers, setTeachers] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load custom founder photo
+    const savedFounderPhoto = localStorage.getItem("sbj_founder_photo");
+    if (savedFounderPhoto) {
+      setCustomFounderPhoto(savedFounderPhoto);
+    }
+
+    // Load custom teachers list if exists, otherwise load preseeded
+    const savedTeachers = localStorage.getItem("sbj_school_teachers");
+    if (savedTeachers) {
+      try {
+        setTeachers(JSON.parse(savedTeachers));
+      } catch (e) {
+        setTeachers(FACULTY_MEMBERS);
+      }
+    } else {
+      setTeachers(FACULTY_MEMBERS);
+    }
+  }, []);
 
   return (
     <div className="space-y-12">
@@ -89,9 +111,15 @@ export default function AboutSection({ lang }: AboutSectionProps) {
           <div className="bg-gradient-to-b from-amber-50 to-white p-8 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center font-bold text-amber-900 border-2 border-amber-400 overflow-hidden shrink-0">
-                  <span className="text-xl">GMT</span>
-                </div>
+                {customFounderPhoto ? (
+                  <div className="w-16 h-16 rounded-full border-2 border-amber-400 overflow-hidden shrink-0">
+                    <img src={customFounderPhoto} alt="Shree Gautam Muni Tiwari" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center font-bold text-amber-900 border-2 border-amber-400 overflow-hidden shrink-0">
+                    <span className="text-xl">GMT</span>
+                  </div>
+                )}
                 <div>
                   <h4 className="font-extrabold text-stone-900 text-base">Shree Gautam Muni Tiwari</h4>
                   <p className="text-xs text-amber-800 font-medium">{lang==='en' ? "Founder & School Manager" : "विद्यालय प्रबंधक एवं संस्थापक"}</p>
@@ -147,9 +175,9 @@ export default function AboutSection({ lang }: AboutSectionProps) {
         </h3>
         
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FACULTY_MEMBERS.map((staff, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-xl border border-stone-200 hover:border-red-300 transition duration-300 shadow-sm flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 font-serif flex items-center justify-center shrink-0 border border-stone-200 font-bold text-sm">
+          {teachers.map((staff, idx) => (
+            <div key={idx} className="bg-white p-5 rounded-xl border border-stone-200 hover:border-red-300 transition duration-300 shadow-sm flex items-start gap-4 animate-fadeIn">
+              <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 font-serif flex items-center justify-center shrink-0 border border-stone-200 font-bold text-sm select-none">
                 {idx + 1}
               </div>
               <div className="space-y-1">
@@ -159,7 +187,7 @@ export default function AboutSection({ lang }: AboutSectionProps) {
                 <p className="text-xs font-semibold text-red-800">
                   {lang === 'en' ? staff.roleEn : staff.roleHi}
                 </p>
-                <p className="text-[10.5px] text-stone-450 font-medium text-stone-500">
+                <p className="text-[10.5px] text-stone-500 font-medium">
                   {lang === 'en' ? staff.eduEn : staff.eduHi}
                 </p>
               </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StudentRecord, GalleryItem, NewsEvent, Language, DonationRecord } from '../types';
 import { SCHOOL_INFO } from '../data';
-import { ShieldAlert, Users, Database, ImagePlus, FileText, Lock, Plus, Trash2, Printer, Search, HelpCircle, Check, BookOpen, Heart } from 'lucide-react';
+import { ShieldAlert, Users, Database, ImagePlus, FileText, Lock, Plus, Trash2, Printer, Search, HelpCircle, Check, BookOpen, Heart, Coins, BellRing, SendHorizontal, TrendingUp } from 'lucide-react';
 
 interface AdminPortalProps {
   lang: Language;
   students: StudentRecord[];
+  onUpdateStudent: (student: StudentRecord) => void;
   onDeleteStudent: (id: string) => void;
   onAddGalleryItem: (item: GalleryItem) => void;
   onAddNewsEvent: (event: NewsEvent) => void;
@@ -19,6 +20,7 @@ interface AdminPortalProps {
 export default function AdminPortal({
   lang,
   students,
+  onUpdateStudent,
   onDeleteStudent,
   onAddGalleryItem,
   onAddNewsEvent,
@@ -35,7 +37,7 @@ export default function AdminPortal({
   const [authError, setAuthError] = useState("");
 
   // Sub-tabs in Admin
-  const [adminActiveSubTab, setAdminActiveSubTab] = useState<'students' | 'publisher' | 'queries' | 'manualUploadHelp' | 'donations'>('students');
+  const [adminActiveSubTab, setAdminActiveSubTab] = useState<'students' | 'publisher' | 'queries' | 'manualUploadHelp' | 'donations' | 'fees'>('students');
 
   // Search/Filters in student list
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,6 +68,17 @@ export default function AdminPortal({
 
   // Messages/Confirmations
   const [publishSuccessMsg, setPublishSuccessMsg] = useState("");
+
+  // Fees Editor & Notification States
+  const [selectedFeeStudentId, setSelectedFeeStudentId] = useState<string | null>(null);
+  const [editFeesTotal, setEditFeesTotal] = useState<number>(0);
+  const [editFeesPaid, setEditFeesPaid] = useState<number>(0);
+  const [editFeesRemarks, setEditFeesRemarks] = useState<string>('');
+  const [notifStudentId, setNotifStudentId] = useState<string | null>(null);
+  const [notifTitle, setNotifTitle] = useState<string>('');
+  const [notifMessage, setNotifMessage] = useState<string>('');
+  const [feesSearchQuery, setFeesSearchQuery] = useState('');
+  const [feesClassFilter, setFeesClassFilter] = useState('All');
 
   // Load parent queries from localStorage
   useEffect(() => {
@@ -187,6 +200,50 @@ export default function AdminPortal({
     }
   };
 
+  const handleUpdateFeesSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFeeStudentId) return;
+    const student = students.find(s => s.id === selectedFeeStudentId);
+    if (student) {
+      const updated: StudentRecord = {
+        ...student,
+        feesTotal: editFeesTotal,
+        feesPaid: editFeesPaid,
+        feesRemarks: editFeesRemarks,
+      };
+      onUpdateStudent(updated);
+      setSelectedFeeStudentId(null);
+      setPublishSuccessMsg("💰 Student Fee configuration updated successfully!");
+      setTimeout(() => setPublishSuccessMsg(""), 3050);
+    }
+  };
+
+  const handleSendNotificationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifStudentId || !notifTitle || !notifMessage) return;
+    const student = students.find(s => s.id === notifStudentId);
+    if (student) {
+      const newNotif = {
+        id: "NOTIF_" + Date.now().toString().slice(-6),
+        title: notifTitle,
+        message: notifMessage,
+        date: new Date().toISOString().slice(0, 10),
+        read: false,
+      };
+      const updatedNotifs = student.notifications ? [...student.notifications, newNotif] : [newNotif];
+      const updated: StudentRecord = {
+        ...student,
+        notifications: updatedNotifs,
+      };
+      onUpdateStudent(updated);
+      setNotifStudentId(null);
+      setNotifTitle('');
+      setNotifMessage('');
+      setPublishSuccessMsg("📢 Alert notification dispatched to student dashboard!");
+      setTimeout(() => setPublishSuccessMsg(""), 3050);
+    }
+  };
+
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.studentName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           student.fatherName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -260,15 +317,16 @@ export default function AdminPortal({
         </div>
       </div>
 
-      {/* Sub tabs selectors */}
-      <div className="flex flex-wrap gap-1 border-b border-stone-250 pb-2 select-none">
-        {[
-          { id: 'students', labelEn: 'Student Records CRM', labelHi: 'छात्र रिकॉर्ड सूची', icon: Users },
-          { id: 'publisher', labelEn: 'Dynamic Photo/News Publisher', labelHi: 'समाचार व फोटो प्रकाशक', icon: ImagePlus },
-          { id: 'donations', labelEn: 'Donations & Ledger', labelHi: 'दान एवं बही प्रबन्धन', icon: Heart },
-          { id: 'queries', labelEn: 'Parent Inquiries Desk', labelHi: 'अभिभावक शिकायत व सुझाव', icon: FileText },
-          { id: 'manualUploadHelp', labelEn: 'Manual Asset Upload Guide', labelHi: 'मैन्युअल फोटो अपलोड गाइड', icon: HelpCircle },
-        ].map((sub) => {
+       {/* Sub tabs selectors */}
+       <div className="flex flex-wrap gap-1 border-b border-stone-250 pb-2 select-none">
+         {[
+           { id: 'students', labelEn: 'Student Records CRM', labelHi: 'छात्र रिकॉर्ड सूची', icon: Users },
+           { id: 'publisher', labelEn: 'Dynamic Photo/News Publisher', labelHi: 'समाचार व फोटो प्रकाशक', icon: ImagePlus },
+           { id: 'fees', labelEn: 'Fees Ledger & Alerts', labelHi: 'शुल्क बही एवं अलर्ट', icon: Coins },
+           { id: 'donations', labelEn: 'Donations & Ledger', labelHi: 'दान एवं बही प्रबन्धन', icon: Heart },
+           { id: 'queries', labelEn: 'Parent Inquiries Desk', labelHi: 'अभिभावक शिकायत व सुझाव', icon: FileText },
+           { id: 'manualUploadHelp', labelEn: 'Manual Asset Upload Guide', labelHi: 'मैन्युअल फोटो अपलोड गाइड', icon: HelpCircle },
+         ].map((sub) => {
           const SubIcon = sub.icon;
           const isSelected = adminActiveSubTab === sub.id;
           return (
@@ -805,6 +863,330 @@ export default function AdminPortal({
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {adminActiveSubTab === 'fees' && (
+        <div className="space-y-8 animate-fadeIn">
+          {/* Header section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-red-900 to-stone-900 p-6 rounded-3xl text-white shadow-lg">
+            <div>
+              <h4 className="text-lg md:text-xl font-extrabold flex items-center gap-2">
+                <Coins className="w-6 h-6 text-yellow-300" />
+                {lang === 'en' ? "Centralized Tuition Fees & Revenue Desk" : "केंद्रीय विद्यालय शुल्क बही व राजस्व डेस्क"}
+              </h4>
+              <p className="text-xs text-stone-300 mt-1">
+                {lang === 'en' 
+                  ? "Audit, configure, track payment indexes, and broadcast official fee pending reminders to rural parents."
+                  : "प्रवेश शुल्क की समीक्षा करें, बकाये विवरण ट्रैक करें तथा अभिभावकों को रिमाइंडर अलर्ट भेजें।"}
+              </p>
+            </div>
+            <div className="px-4 py-2 bg-white/10 rounded-xl text-xs font-mono font-bold tracking-wider shrink-0 select-none">
+              REVENUE DESK: INR (₹)
+            </div>
+          </div>
+
+          {/* Metric KPI cards */}
+          {(() => {
+            const totalExpected = students.reduce((sum, s) => sum + (s.feesTotal || 0), 0);
+            const totalPaid = students.reduce((sum, s) => sum + (s.feesPaid || 0), 0);
+            const totalDue = totalExpected - totalPaid;
+            const collectionPct = totalExpected > 0 ? Math.round((totalPaid / totalExpected) * 100) : 0;
+
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div id="metric-expected" className="bg-white p-5 rounded-2xl border border-stone-155 border-stone-200 shadow-xs">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block">{lang === 'en' ? "Total Fees Expected" : "कुल अनुमानित पाठ्यक्रम शुल्क"}</span>
+                  <p className="text-lg md:text-xl font-black text-stone-950 mt-1">₹{totalExpected.toLocaleString()}</p>
+                  <span className="text-[9px] text-stone-400 block mt-1">From Nursery to VIII</span>
+                </div>
+                <div id="metric-collected" className="bg-emerald-50/60 p-5 rounded-2xl border border-emerald-150 border-emerald-200 shadow-xs">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest block">{lang === 'en' ? "Total Revenue Received" : "कुल प्राप्त शुल्क (आय)"}</span>
+                  <p className="text-lg md:text-xl font-black text-emerald-900 mt-1">₹{totalPaid.toLocaleString()}</p>
+                  <span className="text-[9px] text-emerald-600 block mt-1">Collection rate: {collectionPct}%</span>
+                </div>
+                <div id="metric-due" className="bg-red-50/60 p-5 rounded-2xl border border-red-150 border-red-200 shadow-xs">
+                  <span className="text-[10px] font-bold text-red-800 uppercase tracking-widest block">{lang === 'en' ? "Dues Outstanding" : "कुल बकाया राशि (अधिशेष)"}</span>
+                  <p className="text-lg md:text-xl font-black text-red-905 text-red-650 mt-1">₹{totalDue.toLocaleString()}</p>
+                  <span className="text-[9px] text-red-650 block mt-1">Reminders ready to push</span>
+                </div>
+                <div id="metric-efficiency" className="bg-gradient-to-br from-amber-50 to-white p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-widest block">{lang === 'en' ? "Collection Efficiency" : "राजस्व संकलन दक्षता"}</span>
+                  <p className="text-lg md:text-xl font-black text-amber-900 mt-1">{collectionPct}%</p>
+                  <div className="w-full bg-stone-200 h-1.5 rounded-full mt-2 select-none">
+                    <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${collectionPct}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Quick inline fee parameter editor if student selected */}
+          {selectedFeeStudentId && (() => {
+            const student = students.find(s => s.id === selectedFeeStudentId);
+            if (!student) return null;
+            return (
+              <form onSubmit={handleUpdateFeesSubmit} className="p-6 bg-amber-50/50 border border-amber-200 rounded-3xl space-y-4">
+                <div className="flex justify-between items-center border-b border-amber-200 pb-2.5">
+                  <h5 className="font-extrabold text-stone-900 transition text-sm">
+                    ✏️ {lang === 'en' ? `Configure Fee Setup for: ${student.studentName} ${student.lastName}` : `शुल्क संरचना संपादन: ${student.studentName} ${student.lastName}`}
+                  </h5>
+                  <button type="button" onClick={() => setSelectedFeeStudentId(null)} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2.5 py-1 rounded font-bold cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+                
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wider block">{lang === 'en' ? "Total Fees Obligated (₹)" : "कुल देय शुल्क (सालाना)"}</label>
+                    <input 
+                      type="number"
+                      required
+                      value={editFeesTotal}
+                      onChange={(e) => setEditFeesTotal(Number(e.target.value))}
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wider block">{lang === 'en' ? "Amount Paid Till Date (₹)" : "प्राप्त राशि (जमा)"}</label>
+                    <input 
+                      type="number"
+                      required
+                      value={editFeesPaid}
+                      onChange={(e) => setEditFeesPaid(Number(e.target.value))}
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wider block">{lang === 'en' ? "Audit/Ledger Remarks" : "बही टिप्पणी"}</label>
+                    <input 
+                      type="text"
+                      value={editFeesRemarks}
+                      onChange={(e) => setEditFeesRemarks(e.target.value)}
+                      placeholder="e.g. Cleared 1st term via Cash"
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button type="submit" className="px-5 py-2.5 bg-stone-900 border border-stone-850 hover:bg-stone-805 text-white rounded-xl text-xs font-extrabold cursor-pointer transition select-none flex items-center gap-1.5 shadow-sm">
+                    <Check className="w-4 h-4 text-emerald-400" /> Save & Re-audit Account
+                  </button>
+                </div>
+              </form>
+            );
+          })()}
+
+          {/* Parents push alerts dispatcher */}
+          {notifStudentId && (() => {
+            const student = students.find(s => s.id === notifStudentId);
+            if (!student) return null;
+            const remaining = (student.feesTotal || 0) - (student.feesPaid || 0);
+            return (
+              <form onSubmit={handleSendNotificationSubmit} className="p-6 bg-red-50/50 border border-red-200 rounded-3xl space-y-4">
+                <div className="flex justify-between items-center border-b border-red-200 pb-2.5">
+                  <h5 className="font-extrabold text-sm text-red-900 flex items-center gap-1.5">
+                    <BellRing className="w-4 h-4 text-red-750 animate-bounce" />
+                    {lang === 'en' ? `Dispatch Reminder Alert: ${student.studentName}` : `माता-पिता को बकाया अनुस्मारक भेजें: ${student.studentName}`}
+                  </h5>
+                  <button type="button" onClick={() => setNotifStudentId(null)} className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-800 px-2.5 py-1 rounded font-bold cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-5 items-start">
+                  <div className="sm:col-span-1 p-4 bg-white/70 rounded-2xl border border-stone-200 space-y-2 text-xs">
+                    <p className="font-bold text-stone-900 border-b pb-1">Alert Targets Details:</p>
+                    <p><strong>Student ID:</strong> <code className="bg-stone-100 px-1 py-0.5 rounded font-bold">{student.id}</code></p>
+                    <p><strong>Guardian:</strong> {student.fatherName}</p>
+                    <p><strong>Dues Balance:</strong> <span className="font-bold text-red-700">₹{remaining}</span></p>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setNotifTitle(lang==='en'?"Urgent: Fee Pending Notice":"अति आवश्यक: स्कूल फीस लंबित सुचना");
+                        setNotifMessage(lang==='en' 
+                          ? `Dear Guardian, this is a friendly reminder to clear your child's outstanding fees balance of ₹${remaining} at the Brahma Ji School office.`
+                          : `प्रिय अभिभावक, आपसे विनम्र आग्रह है कि अपने बच्चे की कुल बकाया फीस ₹${remaining} को विद्यालय कार्यालय में तत्काल जमा करें। श्री विजेंद्र कुमार तिवारी (प्रधानाचार्य)।`
+                        );
+                      }}
+                      className="w-full text-[10px] mt-1.5 bg-red-105 bg-red-100 hover:bg-red-200 text-red-800 py-1.5 rounded font-extrabold uppercase select-none cursor-pointer text-center"
+                    >
+                      Load Template Reminder
+                    </button>
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wider block">{lang === 'en' ? "Notification Subject Header" : "अधिसूचना संदेश का शीर्षक (Subject)"}</label>
+                      <input 
+                        type="text"
+                        required
+                        value={notifTitle}
+                        onChange={(e) => setNotifTitle(e.target.value)}
+                        placeholder="e.g. Urgent: School Fee Pending Notice"
+                        className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wider block">{lang === 'en' ? "Sms/Push Warning Message Content" : "अधिसूचना संदेश की विवरण सामग्री"}</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        placeholder="Detailed instructions..."
+                        className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-medium leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button type="submit" className="px-5 py-2.5 bg-red-800 hover:bg-stone-900 text-white rounded-xl text-xs font-extrabold cursor-pointer transition select-none flex items-center gap-1.5 shadow">
+                    <SendHorizontal className="w-3.5 h-3.5" /> {lang === 'en' ? "Dispatch Push Alert Notification" : "माता-पिता मोबाइल डैशबोर्ड पर अलर्ट भेजें"}
+                  </button>
+                </div>
+              </form>
+            );
+          })()}
+
+          {/* Ledger Main Table filter tools */}
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 md:space-y-0 md:flex items-center justify-between gap-4">
+            <div className="flex gap-2 items-center text-xs text-stone-700 font-bold">
+              <span className="font-extrabold text-[10px] uppercase text-stone-400 tracking-wider">Class Grade:</span>
+              <select 
+                value={feesClassFilter} 
+                onChange={(e) => setFeesClassFilter(e.target.value)}
+                className="p-2 border border-stone-200 bg-white rounded-lg font-bold"
+              >
+                <option value="All">All Grades (सभी कक्षाएं)</option>
+                <option value="Nursery">Nursery / KG</option>
+                <option value="Class I to III">Class I to III</option>
+                <option value="Class IV to V">Class IV to V</option>
+                <option value="Class VI to VIII">Class VI to VIII</option>
+              </select>
+            </div>
+
+            <div className="relative max-w-sm w-full">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-stone-400">
+                <Search className="w-4 h-4" />
+              </span>
+              <input 
+                type="text"
+                placeholder={lang === 'en' ? "Search ledger student name..." : "छात्र का नाम खोजें..."}
+                value={feesSearchQuery}
+                onChange={(e) => setFeesSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 rounded-xl text-xs font-medium focus:outline-none focus:border-stone-450"
+              />
+            </div>
+          </div>
+
+          {/* Ledger roll table */}
+          <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-xs">
+            <div className="overflow-x-auto animate-scaleUp">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-stone-50 text-stone-500 font-extrabold border-b border-stone-200 select-none text-[10.5px] uppercase tracking-wider">
+                    <th className="p-4">{lang === 'en' ? 'Admission Roll / ID' : 'प्रवेश क्रमांक (रोल)'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Student Profile Name' : 'छात्र का नाम'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Academic Class Unit' : 'कक्षा'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Fees Obligated' : 'देय शुल्क'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Amount Received' : 'प्राप्त राशि'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Outstanding Dues' : 'बकाया'}</th>
+                    <th className="p-4">{lang === 'en' ? 'Ledger Status / Audited Notes' : 'स्थिति व टीप'}</th>
+                    <th className="p-4 text-right">{lang === 'en' ? 'Administration Options' : 'विकल्प'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 font-medium">
+                  {students
+                    .filter(s => feesClassFilter === 'All' || s.academicClass.includes(feesClassFilter))
+                    .filter(s => s.studentName.toLowerCase().includes(feesSearchQuery.toLowerCase()))
+                    .map((s) => {
+                      const fExpected = s.feesTotal || 0;
+                      const fPaid = s.feesPaid || 0;
+                      const fRemaining = fExpected - fPaid;
+                      const isUnpaid = fRemaining === fExpected;
+                      const isPaid = fRemaining === 0;
+
+                      return (
+                        <tr key={s.id} className="hover:bg-stone-50/50 transition">
+                          <td className="p-4 select-text"><code className="font-mono bg-stone-100 text-stone-800 px-1.5 py-0.5 rounded text-[10px] font-bold">{s.id}</code></td>
+                          <td className="p-4">
+                            <div>
+                              <span className="font-extrabold text-stone-900 block">{s.studentName} {s.lastName}</span>
+                              <span className="text-[10px] text-stone-400 block mt-0.5">Parent: {s.fatherName}</span>
+                            </div>
+                          </td>
+                          <td className="p-4"><span className="text-[11px] font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded">{s.academicClass}</span></td>
+                          <td className="p-4 font-extrabold text-stone-950">₹{fExpected.toLocaleString()}</td>
+                          <td className="p-4 font-bold text-emerald-800">₹{fPaid.toLocaleString()}</td>
+                          <td className="p-4">
+                            {isPaid ? (
+                              <span className="font-bold text-emerald-600 block">₹0</span>
+                            ) : (
+                              <span className="font-black text-red-700 block">₹{fRemaining.toLocaleString()}</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <div className="space-y-1">
+                              {isPaid ? (
+                                <span className="inline-block px-2 py-0.5 text-[9px] font-bold rounded uppercase bg-emerald-100 text-emerald-800">FULL PAID</span>
+                              ) : isUnpaid ? (
+                                <span className="inline-block px-2 py-0.5 text-[9px] font-bold rounded uppercase bg-red-100 text-red-800">UNPAID</span>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 text-[9px] font-bold rounded uppercase bg-amber-100 text-amber-800">PARTIAL PAID</span>
+                              )}
+                              {s.feesRemarks && <span className="block text-[10px] font-mono text-stone-400 max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap" title={s.feesRemarks}>{s.feesRemarks}</span>}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right shrink-0">
+                            <div className="flex justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedFeeStudentId(s.id);
+                                  setEditFeesTotal(fExpected);
+                                  setEditFeesPaid(fPaid);
+                                  setEditFeesRemarks(s.feesRemarks || '');
+                                  // scroll to edit form area and pre-select
+                                  setTimeout(() => {
+                                    const banner = document.getElementById("metric-expected");
+                                    banner?.scrollIntoView({ behavior: "smooth" });
+                                  }, 100);
+                                }}
+                                className="inline-flex items-center gap-1 bg-stone-100 hover:bg-stone-200 text-stone-800 text-[10.5px] px-2.5 py-1.5 rounded-lg cursor-pointer transition border border-stone-200 font-bold"
+                              >
+                                ✏️ Configure
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setNotifStudentId(s.id);
+                                  setNotifTitle(lang==='en'?"Urgent: Fee Pending Notice":"अति आवश्यक: स्कूल फीस लंबित सुचना");
+                                  setNotifMessage(lang==='en' 
+                                    ? `Dear Guardian, this is a friendly reminder to clear your child's outstanding fees balance of ₹${fRemaining} at the Brahma Ji School office.`
+                                    : `प्रिय अभिभावक, आपसे विनम्र आग्रह है कि अपने बच्चे की कुल बकाया फीस ₹${fRemaining} को विद्यालय कार्यालय में तत्काल जमा करें।`
+                                  );
+                                  setTimeout(() => {
+                                    const banner = document.getElementById("metric-expected");
+                                    banner?.scrollIntoView({ behavior: "smooth" });
+                                  }, 100);
+                                }}
+                                className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-800 text-[10px] px-2.5 py-1.5 rounded-lg cursor-pointer transition border border-red-200 font-extrabold"
+                              >
+                                <BellRing className="w-3 h-3" /> Remind Parent
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            {students.length === 0 && (
+              <p className="p-10 text-center text-xs text-stone-400 font-bold">No students matched the audit filter.</p>
             )}
           </div>
         </div>

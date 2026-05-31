@@ -15,6 +15,10 @@ export interface StudentRecord {
   admissionDate: string;
   academicClass: string;
   status: 'Pending' | 'Approved' | 'Rejected';
+  feesTotal?: number;
+  feesPaid?: number;
+  feesRemarks?: string;
+  notifications?: Array<{ id: string; title: string; message: string; date: string; read?: boolean }>;
 }
 
 export interface GalleryItem {

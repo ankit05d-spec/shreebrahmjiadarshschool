@@ -14,6 +14,7 @@ interface HomeSectionProps {
 export default function HomeSection({ lang, setActiveTab, galleryList }: HomeSectionProps) {
   const t = TRANSLATIONS[lang];
   const [slideIndex, setSlideIndex] = useState(0);
+  const [customLargeLogo, setCustomLargeLogo] = useState<string | null>(null);
 
   // Auto slideshow loop
   useEffect(() => {
@@ -22,6 +23,19 @@ export default function HomeSection({ lang, setActiveTab, galleryList }: HomeSec
     }, 5000);
     return () => clearInterval(timer);
   }, [galleryList]);
+
+  // Load custom large showcase logo
+  useEffect(() => {
+    const saved = localStorage.getItem("sbj_custom_large_logo");
+    setCustomLargeLogo(saved);
+
+    // Dynamic storage listener
+    const handleStorage = () => {
+      setCustomLargeLogo(localStorage.getItem("sbj_custom_large_logo"));
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const introHeading = lang === 'en' ? "Empowering Rural Minds Since 2008" : "2008 से ग्रामीण प्रतिभाओं को दे रहे संबल";
   
@@ -98,7 +112,11 @@ export default function HomeSection({ lang, setActiveTab, galleryList }: HomeSec
           
           <div className="md:col-span-4 flex justify-center">
             <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm flex flex-col items-center text-center space-y-4 shadow-2xl relative">
-              <SaraswatiLogo size={130} />
+              {customLargeLogo ? (
+                <img src={customLargeLogo} alt="Home Showcase Banner logo" className="w-[130px] h-[130px] object-contain rounded-xl" referrerPolicy="no-referrer" />
+              ) : (
+                <SaraswatiLogo size={130} />
+              )}
               <div>
                 <h4 className="font-bold text-yellow-300 text-sm tracking-wide">SHREE BRAHMA JI</h4>
                 <p className="text-[10px] text-stone-300 mt-1 uppercase tracking-widest font-mono">ESTD. 2008 / REG. NO. 2008-09</p>

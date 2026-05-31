@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SCHOOL_INFO, TRANSLATIONS, PRESEEDED_GALLERY, PRESEEDED_DOCK_NEWS } from './data';
+import { SCHOOL_INFO, TRANSLATIONS, PRESEEDED_GALLERY, PRESEEDED_DOCK_NEWS, DEMO_STUDENTS } from './data';
 import { Language, StudentRecord, GalleryItem, NewsEvent } from './types';
 import SaraswatiLogo from './components/SaraswatiLogo';
 import HomeSection from './components/HomeSection';
@@ -10,6 +10,7 @@ import NewsSection from './components/NewsSection';
 import ContactSection from './components/ContactSection';
 import AdminPortal from './components/AdminPortal';
 import DonationSection from './components/DonationSection';
+import LoginPortal from './components/LoginPortal';
 
 import { 
   Building, 
@@ -43,9 +44,18 @@ export default function App() {
   const [galleryList, setGalleryList] = useState<GalleryItem[]>([]);
   const [newsList, setNewsList] = useState<NewsEvent[]>([]);
   const [students, setStudents] = useState<StudentRecord[]>([]);
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
 
   // Load persistent records from localStorage
   useEffect(() => {
+    // Load custom logo
+    setCustomLogo(localStorage.getItem("sbj_custom_logo"));
+
+    const handleStorageTrigger = () => {
+      setCustomLogo(localStorage.getItem("sbj_custom_logo"));
+    };
+    window.addEventListener("storage", handleStorageTrigger);
+
     // 1. Photo Gallery initialization
     const storedGallery = localStorage.getItem("sbj_custom_gallery");
     const deletedPreseededGal = JSON.parse(localStorage.getItem("sbj_deleted_preseeded_gallery") || "[]");
@@ -78,10 +88,12 @@ export default function App() {
       try {
         setStudents(JSON.parse(storedStudents));
       } catch (e) {
-        setStudents([]);
+        setStudents(DEMO_STUDENTS);
+        localStorage.setItem("sbj_custom_students", JSON.stringify(DEMO_STUDENTS));
       }
     } else {
-      setStudents([]);
+      setStudents(DEMO_STUDENTS);
+      localStorage.setItem("sbj_custom_students", JSON.stringify(DEMO_STUDENTS));
     }
   }, []);
 
@@ -131,6 +143,14 @@ export default function App() {
     const updated = [newRecord, ...students];
     setStudents(updated);
     localStorage.setItem("sbj_custom_students", JSON.stringify(updated));
+  };
+
+  const handleUpdateStudent = (updatedStudent: StudentRecord) => {
+    const updated = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
+    setStudents(updated);
+    localStorage.setItem("sbj_custom_students", JSON.stringify(updated));
+    // Trigger storage event so independent components reload if needed
+    window.dispatchEvent(new Event("storage"));
   };
 
   const handleDeleteStudent = (id: string) => {
@@ -185,7 +205,7 @@ export default function App() {
     { id: 'news', label: t.newsEvents, icon: Newspaper },
     { id: 'donations', label: t.donate || (lang === 'en' ? 'Support & Donations' : 'सहयोग व दान'), icon: Heart },
     { id: 'contact', label: t.contact, icon: Mail },
-    { id: 'admin', label: t.adminPanel, icon: Lock }
+    { id: 'admin', label: lang === 'en' ? 'Portal & Login' : 'पोर्टल और लॉगिन', icon: ShieldCheck }
   ];
 
   const handleTabChange = (tabId: string) => {
@@ -222,7 +242,11 @@ export default function App() {
             onClick={() => handleTabChange('home')}
             className="flex items-center gap-3 cursor-pointer shrink-0"
           >
-            <SaraswatiLogo size={52} className="hover:rotate-6 transition duration-300" />
+            {customLogo ? (
+              <img src={customLogo} alt="School Logo" className="w-12 h-12 md:w-14 md:h-14 object-contain rounded hover:scale-105 transition duration-300" referrerPolicy="no-referrer" />
+            ) : (
+              <SaraswatiLogo size={52} className="hover:rotate-6 transition duration-300" />
+            )}
             <div>
               <h1 className="text-sm md:text-base lg:text-lg font-black text-red-900 tracking-tight leading-none uppercase">
                 {lang === 'en' ? 'Shree Brahma Ji Adarsh' : 'श्री ब्रह्मा जी आदर्श'}
@@ -359,18 +383,29 @@ export default function App() {
         {activeTab === 'contact' && (
           <ContactSection lang={lang} />
         )}
-        {activeTab === 'admin' && (
-          <AdminPortal 
-            lang={lang} 
-            students={students} 
-            onDeleteStudent={handleDeleteStudent}
+         {activeTab === 'admin' && (
+          <LoginPortal
+            lang={lang}
+            students={students}
+            onUpdateStudent={handleUpdateStudent}
             onAddGalleryItem={handleAddGalleryItem}
-            onAddNewsEvent={handleAddNewsEvent}
-            onGenerateIdCardForStudent={handleGenerateIdCardForStudent}
             galleryList={galleryList}
-            newsList={newsList}
             onDeleteGalleryItem={handleDeleteGalleryItem}
-            onDeleteNewsEvent={handleDeleteNewsEvent}
+            renderAdminPortal={() => (
+              <AdminPortal 
+                lang={lang} 
+                students={students} 
+                onUpdateStudent={handleUpdateStudent}
+                onDeleteStudent={handleDeleteStudent}
+                onAddGalleryItem={handleAddGalleryItem}
+                onAddNewsEvent={handleAddNewsEvent}
+                onGenerateIdCardForStudent={handleGenerateIdCardForStudent}
+                galleryList={galleryList}
+                newsList={newsList}
+                onDeleteGalleryItem={handleDeleteGalleryItem}
+                onDeleteNewsEvent={handleDeleteNewsEvent}
+              />
+            )}
           />
         )}
       </main>
